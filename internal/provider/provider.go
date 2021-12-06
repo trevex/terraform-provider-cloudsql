@@ -2,9 +2,18 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+const (
+	InstanceTypePostgres = "POSTGRES"
+	InstanceTypeMySQL    = "MYSQL"
 )
 
 func init() {
@@ -26,11 +35,43 @@ func init() {
 func New(version string) func() *schema.Provider {
 	return func() *schema.Provider {
 		p := &schema.Provider{
-			DataSourcesMap: map[string]*schema.Resource{
-				"scaffolding_data_source": dataSourceScaffolding(),
+			Schema: map[string]*schema.Schema{
+				"instance_type": {
+					Description:  "TODO",
+					Type:         schema.TypeString,
+					Optional:     true,
+					ValidateFunc: validation.StringInSlice([]string{InstanceTypePostgres, InstanceTypeMySQL}, true),
+					DefaultFunc:  schema.EnvDefaultFunc("CLOUDSQL_INSTANCE_TYPE", InstanceTypePostgres),
+				},
+				"instance_name": {
+					Description: "TODO",
+					Type:        schema.TypeString,
+					Optional:    true,
+					DefaultFunc: schema.EnvDefaultFunc("CLOUDSQL_INSTANCE_NAME", ""),
+				},
+				"database": {
+					Description: "TODO",
+					Type:        schema.TypeString,
+					Optional:    true,
+					DefaultFunc: schema.EnvDefaultFunc("CLOUDSQL_DATABASE", ""),
+				},
+				"username": {
+					Description: "TODO",
+					Type:        schema.TypeString,
+					Optional:    true,
+					DefaultFunc: schema.EnvDefaultFunc("CLOUDSQL_USERNAME", ""),
+				},
+				"password": {
+					Description: "TODO",
+					Type:        schema.TypeString,
+					Optional:    true,
+					Sensitive:   true,
+					DefaultFunc: schema.EnvDefaultFunc("CLOUDSQL_PASSWORD", ""),
+				},
 			},
+			DataSourcesMap: map[string]*schema.Resource{},
 			ResourcesMap: map[string]*schema.Resource{
-				"scaffolding_resource": resourceScaffolding(),
+				"cloudsql_migration": resourceCloudSQLMigration(),
 			},
 		}
 
@@ -40,18 +81,39 @@ func New(version string) func() *schema.Provider {
 	}
 }
 
-type apiClient struct {
-	// Add whatever fields, client or connection info, etc. here
-	// you would need to setup to communicate with the upstream
-	// API.
+type providerConfig struct {
+	InstanceType string
+	InstanceName string
+	Database     string
+	Username     string
+	Password     string
 }
 
 func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	return func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
+	return func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 		// Setup a User-Agent for your API client (replace the provider name for yours):
-		// userAgent := p.UserAgent("terraform-provider-scaffolding", version)
+		// userAgent := p.UserAgent("terraform-provider-cloudsql", version)
 		// TODO: myClient.UserAgent = userAgent
 
-		return &apiClient{}, nil
+		return &providerConfig{
+			InstanceType: d.Get("instance_type").(string),
+			InstanceName: d.Get("instance_name").(string),
+			Database:     d.Get("database").(string),
+			Username:     d.Get("username").(string),
+			Password:     d.Get("password").(string),
+		}, nil
 	}
 }
+
+func leveledLog(level string) func(format string, v ...interface{}) {
+	prefix := fmt.Sprintf("[%s] ", strings.ToUpper(level))
+	return func(format string, v ...interface{}) {
+		log.Printf(prefix+format, v...)
+	}
+}
+
+var traceLog = leveledLog("trace")
+var debugLog = leveledLog("debug")
+var infoLog = leveledLog("info")
+var warnLog = leveledLog("warn")
+var errorLog = leveledLog("error")
