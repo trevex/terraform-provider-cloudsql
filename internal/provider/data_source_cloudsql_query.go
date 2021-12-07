@@ -59,8 +59,7 @@ func dataSourceCloudSQLQuery() *schema.Resource {
 					},
 				},
 				Computed:    true,
-				Description: "List of mapsMap of strings read from Vault.",
-				Sensitive:   true,
+				Description: "List of lists of map of strings",
 			},
 		},
 	}
@@ -80,6 +79,7 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 	defer tx.Rollback()
 
 	query := d.Get("query").(string)
+	debugLog("running sql query: %s", query)
 	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {
 		return diag.Errorf("Failed to exec query `%s`, returned: %v", query, err)
@@ -92,6 +92,7 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 		if err != nil {
 			return diag.Errorf("Failed to retrieve columns: %s", err)
 		}
+		debugLog("columns of result set: %v", cols)
 
 		resultSetData := []map[string]string{}
 		for rows.Next() {
@@ -109,6 +110,7 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 
 			for i, col := range cols {
 				rowData[col] = vals[i]
+				debugLog("setting row data `%s` = `%s`", col, vals[i])
 			}
 			resultSetData = append(resultSetData, rowData)
 		}
@@ -122,7 +124,8 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 		return diag.Errorf("Failed to commit query: %v", err)
 	}
 
-	d.SetId("")
+	d.SetId(query)
+	debugLog("final computed data: %v", data)
 	d.Set("data", data)
 	return nil
 }
