@@ -2,6 +2,8 @@ package provider
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -135,7 +137,10 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 	if err != nil {
 		return diag.Errorf("Failed to marshal data into json: %v", err)
 	}
-	d.SetId(query)
+	hasher := sha1.New()
+	hasher.Write([]byte(query))
+	checksum := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+	d.SetId(checksum)
 	d.Set("data_json", string(jsonData))
 	return nil
 }
