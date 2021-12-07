@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -61,6 +62,11 @@ func dataSourceCloudSQLQuery() *schema.Resource {
 				Computed:    true,
 				Description: "List of lists of map of strings",
 			},
+			"data_json": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "TODO",
+			},
 		},
 	}
 }
@@ -86,7 +92,7 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 	}
 	defer rows.Close()
 
-	data := [][]map[string]string{}
+	data := [][]map[string]interface{}{}
 	for {
 		cols, err := rows.Columns()
 		if err != nil {
@@ -94,11 +100,11 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 		}
 		debugLog("columns of result set: %v", cols)
 
-		resultSetData := []map[string]string{}
+		resultSetData := []map[string]interface{}{}
 		for rows.Next() {
-			rowData := map[string]string{}
+			rowData := map[string]interface{}{}
 			ptrs := make([]interface{}, len(cols))
-			vals := make([]string, len(cols))
+			vals := make([]interface{}, len(cols))
 
 			for i := range ptrs {
 				ptrs[i] = &vals[i]
@@ -109,8 +115,16 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 			}
 
 			for i, col := range cols {
-				rowData[col] = vals[i]
-				debugLog("setting row data `%s` = `%s`", col, vals[i])
+				var v interface{}
+				val := vals[i]
+				b, ok := val.([]byte)
+				if ok {
+					v = string(b)
+				} else {
+					v = val
+				}
+				rowData[col] = v
+				debugLog("setting row data `%s` = `%v`", col, v)
 			}
 			resultSetData = append(resultSetData, rowData)
 		}
@@ -127,5 +141,10 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 	d.SetId(query)
 	debugLog("final computed data: %v", data)
 	d.Set("data", data)
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return diag.Errorf("Failed to marshal data into json: %v", err)
+	}
+	d.Set("data_json", string(jsonData))
 	return nil
 }
