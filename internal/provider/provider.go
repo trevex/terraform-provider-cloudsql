@@ -69,7 +69,9 @@ func New(version string) func() *schema.Provider {
 					DefaultFunc: schema.EnvDefaultFunc("CLOUDSQL_PASSWORD", ""),
 				},
 			},
-			DataSourcesMap: map[string]*schema.Resource{},
+			DataSourcesMap: map[string]*schema.Resource{
+				"cloudsql_query": dataSourceCloudSQLQuery(),
+			},
 			ResourcesMap: map[string]*schema.Resource{
 				"cloudsql_migration": resourceCloudSQLMigration(),
 			},
