@@ -2,7 +2,9 @@ package provider
 
 import (
 	"context"
+	"crypto/sha1"
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
@@ -93,7 +95,10 @@ func resourceCloudSQLMigrationCreate(ctx context.Context, d *schema.ResourceData
 		return diag.Errorf("Failed to commit query: %v", err)
 	}
 
-	d.SetId(query)
+	hasher := sha1.New()
+	hasher.Write([]byte(query))
+	checksum := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+	d.SetId(checksum)
 	return nil
 }
 
