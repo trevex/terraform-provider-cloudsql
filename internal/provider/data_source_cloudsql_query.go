@@ -87,14 +87,13 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 	defer rows.Close()
 
 	data := [][]map[string]string{}
-	resultSet := 0
 	for {
 		cols, err := rows.Columns()
 		if err != nil {
-			return diag.Errorf("Failed to retrieve columns of resultSet#%d: %s", resultSet, err)
+			return diag.Errorf("Failed to retrieve columns: %s", err)
 		}
 
-		data[resultSet] = []map[string]string{}
+		resultSetData := []map[string]string{}
 		for rows.Next() {
 			rowData := map[string]string{}
 			ptrs := make([]interface{}, len(cols))
@@ -105,18 +104,18 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 			}
 
 			if err := rows.Scan(ptrs...); err != nil {
-				return diag.Errorf("Failed scan row of resultSet#%d: %s", resultSet, err)
+				return diag.Errorf("Failed scan row: %s", err)
 			}
 
 			for i, col := range cols {
 				rowData[col] = vals[i]
 			}
-			data[resultSet] = append(data[resultSet], rowData)
+			resultSetData = append(resultSetData, rowData)
 		}
+		data = append(data, resultSetData)
 		if !rows.NextResultSet() {
 			break
 		}
-		resultSet += 1
 	}
 
 	if err := tx.Commit(); err != nil {
