@@ -1,3 +1,4 @@
-provider "scaffolding" {
+provider "cloudsql" {
   # example configuration here
 }
+
