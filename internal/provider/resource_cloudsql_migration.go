@@ -73,24 +73,24 @@ func resourceCloudSQLMigration() *schema.Resource {
 func resourceCloudSQLMigrationCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	db, err := sqlOpen(ctx, d, meta)
 	if err != nil {
-		return diag.Errorf("Failed to open connect to database instance: %w", err)
+		return diag.Errorf("Failed to open connect to database instance: %v", err)
 	}
 	defer db.Close()
 
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return diag.Errorf("Failed to begin transaction: %w", err)
+		return diag.Errorf("Failed to begin transaction: %v", err)
 	}
 	defer tx.Rollback()
 
 	query := d.Get("up").(string)
 	_, err = tx.ExecContext(ctx, query)
 	if err != nil {
-		return diag.Errorf("Failed to exec query `%s`, returned: %w", query, err)
+		return diag.Errorf("Failed to exec query `%s`, returned: %v", query, err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return diag.Errorf("Failed to commit query: %w", err)
+		return diag.Errorf("Failed to commit query: %v", err)
 	}
 
 	d.SetId(query)
@@ -114,24 +114,24 @@ func resourceCloudSQLMigrationUpdate(ctx context.Context, d *schema.ResourceData
 func resourceCloudSQLMigrationDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	db, err := sqlOpen(ctx, d, meta)
 	if err != nil {
-		return diag.Errorf("Failed to open connect to database instance: %w", err)
+		return diag.Errorf("Failed to open connect to database instance: %v", err)
 	}
 	defer db.Close()
 
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return diag.Errorf("Failed to begin transaction: %w", err)
+		return diag.Errorf("Failed to begin transaction: %v", err)
 	}
 	defer tx.Rollback()
 
 	query := d.Get("down").(string)
 	_, err = tx.ExecContext(ctx, query)
 	if err != nil {
-		return diag.Errorf("Failed to exec query `%s`, returned: %w", query, err)
+		return diag.Errorf("Failed to exec query `%s`, returned: %v", query, err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return diag.Errorf("Failed to commit query: %w", err)
+		return diag.Errorf("Failed to commit query: %v", err)
 	}
 
 	return nil
