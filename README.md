@@ -1,4 +1,31 @@
-# Terraform Provider Scaffolding
+# Terraform Provider CloudSQL
+
+```
+This provider is a test with the main purpose to see how to improve automation of CloudSQL users with restricted permissions, e.g.:
+
+resource "cloudsql_migration" "example" {
+  instance_name = google_sql_database_instance.example.connection_name
+  database      = google_sql_database.example.name
+  username      = google_sql_user.admin.name
+  password      = google_sql_user.admin.password
+
+  up = <<-EOF
+    CREATE USER readonly PASSWORD 'test';
+    GRANT CONNECT ON DATABASE mydatabase TO readonly;
+    GRANT USAGE ON SCHEMA "public" TO readonly;
+    GRANT SELECT ON ALL TABLES IN SCHEMA "public" TO readonly;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA "public" GRANT SELECT ON TABLES TO readonly;
+  EOF
+  down = <<-EOF
+    ALTER DEFAULT PRIVILEGES IN SCHEMA "public" REVOKE SELECT ON TABLES FROM readonly;
+    REVOKE SELECT ON ALL TABLES IN SCHEMA "public" FROM readonly;
+    REVOKE USAGE ON SCHEMA "public" FROM readonly;
+    REVOKE CONNECT ON DATABASE mydatabase FROM readonly;
+    DROP USER readonly;
+  EOF
+}
+```
+
 
 This repository is a *template* for a [Terraform](https://www.terraform.io) provider. It is intended as a starting point for creating Terraform providers, containing:
 
