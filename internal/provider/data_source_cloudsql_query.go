@@ -51,18 +51,10 @@ func dataSourceCloudSQLQuery() *schema.Resource {
 				Required:    true,
 				ForceNew:    true,
 			},
-			"data": {
-				Type: schema.TypeList,
-				Elem: &schema.Schema{
-					Type: schema.TypeList,
-					Elem: &schema.Schema{
-						Type: schema.TypeMap,
-					},
-				},
-				Computed:    true,
-				Description: "List of lists of map of strings",
-			},
-			"data_json": {
+			// TODO: well, we can't output results directly without
+			//       https://github.com/hashicorp/terraform-plugin-go
+			//       so should we should use it? or will there be support in sdk going forward?
+			"result_json": {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Description: "TODO",
@@ -138,13 +130,12 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 		return diag.Errorf("Failed to commit query: %v", err)
 	}
 
-	d.SetId(query)
 	debugLog("final computed data: %v", data)
-	d.Set("data", data)
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return diag.Errorf("Failed to marshal data into json: %v", err)
 	}
+	d.SetId(query)
 	d.Set("data_json", string(jsonData))
 	return nil
 }
