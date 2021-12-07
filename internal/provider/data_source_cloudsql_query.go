@@ -50,6 +50,18 @@ func dataSourceCloudSQLQuery() *schema.Resource {
 				Required:    true,
 				ForceNew:    true,
 			},
+			"data": {
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeList,
+					Elem: &schema.Schema{
+						Type: schema.TypeMap,
+					},
+				},
+				Computed:    true,
+				Description: "List of mapsMap of strings read from Vault.",
+				Sensitive:   true,
+			},
 		},
 	}
 }
@@ -74,7 +86,7 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 	}
 	defer rows.Close()
 
-	data := []map[string]string{}
+	data := [][]map[string]string{}
 	resultSet := 0
 	for {
 		cols, err := rows.Columns()
@@ -82,8 +94,9 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 			return diag.Errorf("Failed to retrieve columns of resultSet#%d: %s", resultSet, err)
 		}
 
-		data[resultSet] = map[string]string{}
+		data[resultSet] = []map[string]string{}
 		for rows.Next() {
+			rowData := map[string]string{}
 			ptrs := make([]interface{}, len(cols))
 			vals := make([]string, len(cols))
 
@@ -96,8 +109,9 @@ func dataSourceCloudSQLQueryRead(ctx context.Context, d *schema.ResourceData, me
 			}
 
 			for i, col := range cols {
-				data[resultSet][col] = vals[i]
+				rowData[col] = vals[i]
 			}
+			data[resultSet] = append(data[resultSet], rowData)
 		}
 		if !rows.NextResultSet() {
 			break
