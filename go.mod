@@ -3,7 +3,7 @@ module github.com/trevex/terraform-provider-cloudsql
 go 1.15
 
 require (
-	github.com/GoogleCloudPlatform/cloudsql-proxy v1.27.0
+	github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.0
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/aws/aws-sdk-go v1.37.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.8.2 // indirect
